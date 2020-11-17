@@ -38,8 +38,8 @@ def home():
         f"/api/v1.0/precipitation<br>"
         f"/api/v1.0/stations<br>"
         f"/api/v1.0/tobs<br>"
-        f"/api/v1.0/<start><br>"
-        f"/api/v1.0/<start>/<end><br>"
+        f"/api/v1.0/'2012.08.23'<br>"
+        f"/api/v1.0/'2016.08.23'/'2016.10.23'<br>"
         )
 
 @app.route("/api/v1.0/precipitation")
@@ -73,8 +73,40 @@ def stations():
 
     return jsonify(all_stations)
 
+@app.route("/api/v1.0/tobs")
+def tobs():
+    """Return a list of temperature observations for the the most active station for the previous year."""
+
+    query_date = dt.date(2017, 8, 23) - dt.timedelta(days=365)
+
+    most_active = session.query(measurement.station, func.count(measurement.tobs)).\
+        group_by(measurement.station).order_by(func.count(measurement.tobs).desc()).first()
+
+    #pull just the station from the tuple
+    most_active_station = most_active[0]
+
+    #query for the max, min, and average temperature of the most active station
+    session.query(measurement.station, func.max(measurement.tobs), func.min(measurement.tobs), func.avg(measurement.tobs)).\
+        filter(measurement.station==most_active_station).all()
+
+    #Query the last 12 months of temperature observation data for this station
+    tobs_query = session.query(measurement.tobs).filter(measurement.station==most_active_station).\
+        filter(measurement.date>=query_date).all()
+
+    return jsonify(tobs_query)
+
+# @app.route("/api/v1.0/<2016.8.23>")
+# def start():
+#     """List of average, minimum, and maximum temperature for all dates greater than and equal to the start date."""
 
 
+@app.route("/api/v1.0/'2016.08.23'/'2016.10.23'")
+def calc_temps(start_date=('2016-08-23'), end_date=('2016-10-23')):
+
+    temps = session.query(func.min(measurement.tobs), func.avg(measurement.tobs), func.max(measurement.tobs)).\
+        filter(measurement.date >= start_date).filter(measurement.date <= end_date).all()
+
+    return jsonify(temps)
 
 
 #close the session
