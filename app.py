@@ -62,23 +62,29 @@ def prcp():
         prcp_list.append(prcp_dict)
 
     return jsonify(prcp_list)
-    
+
+#what to do when user selects stations route
 @app.route("/api/v1.0/stations")
 def stations():
     """Return a list of stations from the dataset."""
 
+    #query all stations from dataset
     results = session.query(station.station).all()
 
+    #transform query results into a list
     all_stations = list(np.ravel(results))
 
     return jsonify(all_stations)
 
+#what to do when user selects tobs route
 @app.route("/api/v1.0/tobs")
 def tobs():
     """Return a list of temperature observations for the the most active station for the previous year."""
 
+    #calculating the date 1 year ago from the last data point in the database
     query_date = dt.date(2017, 8, 23) - dt.timedelta(days=365)
 
+    #perform a query to retrieve the data and precipitation scores
     most_active = session.query(measurement.station, func.count(measurement.tobs)).\
         group_by(measurement.station).order_by(func.count(measurement.tobs).desc()).first()
 
@@ -89,7 +95,7 @@ def tobs():
     session.query(measurement.station, func.max(measurement.tobs), func.min(measurement.tobs), func.avg(measurement.tobs)).\
         filter(measurement.station==most_active_station).all()
 
-    #Query the last 12 months of temperature observation data for this station
+    #query the last 12 months of temperature observation data for this station
     tobs_query = session.query(measurement.tobs).filter(measurement.station==most_active_station).\
         filter(measurement.date>=query_date).all()
 
@@ -101,9 +107,11 @@ def start(start_date=('2012-08-23')):
 
     temps_list = []
 
+    #query the min, avg, and max temperature observations for all dates before and including the start date
     start_temps = session.query(measurement.date, func.min(measurement.tobs), func.avg(measurement.tobs), func.max(measurement.tobs)).\
         filter(measurement.date >= start_date).all()
 
+    #create a dict from the row data and append to list of temps_list
     for date, min, avg, max in start_temps:
         temps_dict = {}
         temps_dict['date'] = date
@@ -120,9 +128,11 @@ def calc_temps(start_date=('2016-08-23'), end_date=('2016-10-23')):
 
     sec_temps_list = []
 
+    #query the min, avg, and max temperature observations for all dates inclusive of the start and end dates
     temps = session.query(measurement.date, func.min(measurement.tobs), func.avg(measurement.tobs), func.max(measurement.tobs)).\
         filter(measurement.date >= start_date).filter(measurement.date <= end_date).all()
 
+    #create a dict from the row data and append to list of sec_temps_list
     for date, min, avg, max in temps:
         sec_temps_dict = {}
         sec_temps_dict['date'] = date
