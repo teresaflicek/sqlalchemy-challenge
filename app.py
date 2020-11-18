@@ -28,7 +28,7 @@ app = Flask(__name__)
 #create one session (link) from python to the database for all routes
 session = Session(engine)
 
-#what to do when a user hits index route
+#what to do when a user selects index route
 @app.route("/")
 def home():
     """List all available API routes."""
@@ -38,10 +38,11 @@ def home():
         f"/api/v1.0/precipitation<br>"
         f"/api/v1.0/stations<br>"
         f"/api/v1.0/tobs<br>"
-        f"/api/v1.0/'2012.08.23'<br>"
-        f"/api/v1.0/'2016.08.23'/'2016.10.23'<br>"
+        f"/api/v1.0/2012.08.23<br>"
+        f"/api/v1.0/2016.08.23/2016.10.23<br>"
         )
 
+#what to do when user selects precipitation route
 @app.route("/api/v1.0/precipitation")
 def prcp():
     """Convert the query results to a dict using date as the key and prcp as the value."""
@@ -51,7 +52,6 @@ def prcp():
     
     results = session.query(measurement.date, measurement.prcp).\
         filter(measurement.date >= query_date).all()
-
 
     #create a dict from the row data and append to list of prcp_list
     prcp_list = []
@@ -95,19 +95,43 @@ def tobs():
 
     return jsonify(tobs_query)
 
-# @app.route("/api/v1.0/<2016.8.23>")
-# def start():
-#     """List of average, minimum, and maximum temperature for all dates greater than and equal to the start date."""
+@app.route("/api/v1.0/2012.08.23")
+def start(start_date=('2012-08-23')):
+    """List of average, minimum, and maximum temperature for all dates greater than and equal to the start date."""
 
+    temps_list = []
 
-@app.route("/api/v1.0/'2016.08.23'/'2016.10.23'")
+    start_temps = session.query(measurement.date, func.min(measurement.tobs), func.avg(measurement.tobs), func.max(measurement.tobs)).\
+        filter(measurement.date >= start_date).all()
+
+    for date, min, avg, max in start_temps:
+        temps_dict = {}
+        temps_dict['date'] = date
+        temps_dict['tmin'] = min
+        temps_dict['tavg'] = avg
+        temps_dict['tmax'] = max
+        temps_list.append(temps_dict)
+
+    return jsonify(temps_list)
+
+@app.route("/api/v1.0/2016.08.23/2016.10.23")
 def calc_temps(start_date=('2016-08-23'), end_date=('2016-10-23')):
+    """List of average, minimum, and maximum temperature for all dates inclusive of start and end date."""
 
-    temps = session.query(func.min(measurement.tobs), func.avg(measurement.tobs), func.max(measurement.tobs)).\
+    sec_temps_list = []
+
+    temps = session.query(measurement.date, func.min(measurement.tobs), func.avg(measurement.tobs), func.max(measurement.tobs)).\
         filter(measurement.date >= start_date).filter(measurement.date <= end_date).all()
 
-    return jsonify(temps)
+    for date, min, avg, max in temps:
+        sec_temps_dict = {}
+        sec_temps_dict['date'] = date
+        sec_temps_dict['tmin'] = min
+        sec_temps_dict['tavg'] = avg
+        sec_temps_dict['tmax'] = max
+        sec_temps_list.append(sec_temps_dict)
 
+    return jsonify(sec_temps_list)
 
 #close the session
 session.close()
