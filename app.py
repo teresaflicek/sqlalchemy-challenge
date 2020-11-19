@@ -39,7 +39,7 @@ def home():
         f"/api/v1.0/stations<br>"
         f"/api/v1.0/tobs<br>"
         f"/api/v1.0/2012.08.23<br>"
-        f"/api/v1.0/2016.08.23/2016.10.23<br>"
+        f"/api/v1.0/2016.08.23/2016.09.05<br>"
         )
 
 #what to do when user selects precipitation route
@@ -122,8 +122,8 @@ def start(start_date=('2012-08-23')):
 
     return jsonify(temps_list)
 
-@app.route("/api/v1.0/2016.08.23/2016.10.23")
-def calc_temps(start_date=('2016-08-23'), end_date=('2016-10-23')):
+@app.route("/api/v1.0/2016.08.23/2016.09.05")
+def calc_temps(start_date=('2016-08-23'), end_date=('2016-09-05')):
     """List of average, minimum, and maximum temperature for all dates inclusive of start and end date."""
 
     sec_temps_list = []
